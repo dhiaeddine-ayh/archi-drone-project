@@ -1,29 +1,51 @@
 <p align="center">
-  <h1 align="center">🚁 PX4 AI Tracker</h1>
+  <h1 align="center">🚁 Autonomous Drone Computer Vision Projects</h1>
   <p align="center">
-    <strong>Autonomous Drone System with Computer Vision &amp; Thermal Tracking</strong>
+    <strong>PX4 AI Tracker &nbsp;·&nbsp; Aerial YOLOv8 Object Detection</strong>
   </p>
   <p align="center">
-    <em>PX4 Autopilot · ROS 2 Humble · Gazebo Classic · OpenCV · PID Visual Servoing</em>
+    <em>PX4 Autopilot · ROS 2 Humble · Gazebo · OpenCV · YOLOv8 · MAVSDK · Docker</em>
+  </p>
+  <p align="center">
+    <img src="https://img.shields.io/badge/ROS2-Humble-blue?logo=ros" />
+    <img src="https://img.shields.io/badge/PX4-SITL-orange" />
+    <img src="https://img.shields.io/badge/YOLOv8-Ultralytics-purple" />
+    <img src="https://img.shields.io/badge/Docker-GPU-informational?logo=docker" />
+    <img src="https://img.shields.io/badge/Python-3.10+-yellow?logo=python" />
   </p>
 </p>
 
 ---
 
-## 📋 Overview
+This repository contains **two complementary computer-vision drone projects** developed for the Master SIPNOM (Intelligent Systems) programme at USTHB. Both projects are built on the PX4 / ROS 2 / Gazebo ecosystem.
 
-**PX4 AI Tracker** is a fully autonomous drone system built in simulation that combines real-time computer vision with flight control. The project features two core missions:
-
-| Mission | Description |
-|---------|-------------|
-| 🏙️ **City Road Tracker** | Autonomous road-following over a realistic city using a downward-facing camera, HSV colour segmentation and contour-based lane detection |
-| 🌙 **Nighttime Thermal Tracker** | Autonomous human tracking in a dark environment using a simulated thermal camera and PID visual servoing |
-
-A **Drone Control GUI** provides live video, telemetry and one-click access to **9 flight missions** (road follow, car follow, patrol, circle orbit, square patrol, figure-8, grid scan, hover, return-to-home).
+| | Project 1 — PX4 AI Tracker | Project 2 — YOLOv8 Aerial Detection |
+|---|---|---|
+| **Simulator** | Gazebo Classic | Gazebo Garden |
+| **Drone** | Iris (`iris_cam`) | x500_depth |
+| **Camera** | Fixed downward | 2-axis gimbal (pitch + yaw) |
+| **CV approach** | OpenCV classical | YOLOv8 deep learning |
+| **Flight control** | ROS 2 offboard | MAVSDK keyboard |
+| **Orchestration** | Shell scripts | tmuxinator |
+| **Deployment** | Bare-metal | Docker + GPU passthrough |
+| **Targets** | Roads · humans · maze | Moving car |
 
 ---
 
-## 🏗️ Architecture
+## 🏙️ Project 1 — PX4 AI Tracker
+
+Fully autonomous drone system combining classical computer vision with PID flight control across three missions and a general-purpose GUI.
+
+### Missions
+
+| Mission | Description |
+|---------|-------------|
+| 🛣️ **City Road Follower** | Follows lane markings over a CitySim city using HSV colour segmentation, contour fitting and PID yaw control |
+| 🌙 **Nighttime Thermal Tracker** | Detects and tracks human heat signatures with a simulated thermal camera and dual-axis PID visual servoing |
+| 🧩 **Maze Solver** | Ascends to scan a 10×10 grid maze, detects walls via OpenCV thresholding (YOLO-style overlays), solves the path with A\*, then navigates waypoint by waypoint |
+| 🎯 **Demo Mission** | Autonomous circle orbit → figure-8 → spiral descent with no user input |
+
+### Architecture
 
 ```
 ┌──────────────┐     ┌───────────────┐     ┌──────────────────┐
@@ -31,300 +53,302 @@ A **Drone Control GUI** provides live video, telemetry and one-click access to *
 │ (Autopilot)  │◄───►│ XRCE-DDS      │◄───►│ Nodes (OpenCV)   │
 └──────┬───────┘     └───────────────┘     └────────┬─────────┘
        │                                            │
-┌──────┴───────┐                            ┌───────┴──────────┐
-│ Gazebo       │                            │ Mission          │
-│ Classic      │                            │ Controller / GUI │
-└──────────────┘                            └──────────────────┘
+┌──────┴───────┐                          ┌─────────┴────────┐
+│ Gazebo       │                          │ Mission          │
+│ Classic      │                          │ Controller / GUI │
+└──────────────┘                          └──────────────────┘
 ```
 
-**Key Components:**
-- **PX4 Autopilot (SITL)** — flight controller in Software-In-The-Loop mode
-- **Gazebo Classic** — 3D physics simulator with custom worlds & drone models
-- **Micro XRCE-DDS** — bridge between PX4 uORB and ROS 2 DDS
-- **ROS 2 Humble** — middleware for inter-process communication
-- **OpenCV** — real-time image processing for road detection & thermal perception
-
----
-
-## 📁 Project Structure
+### Project Structure
 
 ```
 px4_ai_tracker/
-├── road_detection_node.py        # OpenCV road surface detection (HSV + contours)
-├── road_follower_node.py         # Autonomous road-following controller (14-state FSM)
+├── road_detection_node.py        # OpenCV road detection (HSV + contours)
+├── road_follower_node.py         # 14-state FSM road-following controller
 ├── thermal_perception_node.py    # Thermal camera human detection (Inferno colormap)
-├── offboard_tracker_node.py      # PID visual servoing for thermal tracking
-├── demo_mission.py               # Demo flight patterns (circle, figure-8, spiral)
-├── drone_gui.py                  # Tkinter GUI with live camera, telemetry & missions
-├── launch_city_tracker.sh        # 🏙️  One-click launcher for city road-following
-├── launch_thermal_tracker.sh     # 🌙  One-click launcher for thermal tracking
-├── fly_now.sh                    # 🚁  One-click launcher for demo mission
-├── fastdds_udp_only.xml          # FastDDS UDP-only transport config
-├── PX4-Autopilot/                # PX4 firmware (SITL build)
-├── citysim/                      # CitySim city model source
-├── citysim_install/              # CitySim installed assets
-└── venv/                         # Python virtual environment
+├── offboard_tracker_node.py      # PID visual servoing tracker
+├── maze_solver_mission.py        # Maze solver GUI + A* pathfinding
+├── demo_mission.py               # Autonomous demo flight patterns
+├── drone_gui.py                  # Tkinter GUI — live feed, telemetry, 9 missions
+├── launch_city_tracker.sh        # 🏙️  One-click city road-following launcher
+├── launch_thermal_tracker.sh     # 🌙  One-click thermal tracking launcher
+├── launch_maze_solver.sh         # 🧩  One-click maze solver launcher
+├── fly_now.sh                    # 🚁  One-click demo launcher
+├── fastdds_udp_only.xml          # FastDDS UDP-only transport profile
+├── citysim/                      # CitySim city simulation assets
+└── PX4-Autopilot/                # PX4 firmware (SITL build)
 ```
 
----
+### Installation
 
-## 🛠️ Installation
-
-### Prerequisites
-
-- **Ubuntu 22.04 LTS**
-- **ROS 2 Humble**
-- **Gazebo Classic 11**
-- **Python 3.10+**
-
-### Step 1 — Install ROS 2 Humble
+**Prerequisites:** Ubuntu 22.04 · ROS 2 Humble · Gazebo Classic 11 · Python 3.10+
 
 ```bash
-# Follow the official docs: https://docs.ros.org/en/humble/Installation.html
-sudo apt install ros-humble-desktop
-echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
+# 1. Install ROS 2 Humble
+sudo apt install ros-humble-desktop ros-humble-gazebo-ros ros-humble-gazebo-plugins
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && source ~/.bashrc
 
-### Step 2 — Install Gazebo Classic
+# 2. Clone this repository
+git clone https://github.com/dhiaeddine-ayh/archi-drone-project.git
+cd archi-drone-project
 
-```bash
-sudo apt install gazebo ros-humble-gazebo-ros ros-humble-gazebo-plugins
-```
+# 3. Build PX4 Autopilot (SITL)
+cd PX4-Autopilot && bash Tools/setup/ubuntu.sh
+make px4_sitl gazebo-classic && cd ..
 
-### Step 3 — Clone this repository
-
-```bash
-git clone https://github.com/<your-username>/px4_ai_tracker.git
-cd px4_ai_tracker
-```
-
-### Step 4 — Build PX4 Autopilot (SITL)
-
-```bash
-cd PX4-Autopilot
-bash Tools/setup/ubuntu.sh
-make px4_sitl gazebo-classic
-cd ..
-```
-
-### Step 5 — Install Micro XRCE-DDS Agent
-
-```bash
+# 4. Install Micro XRCE-DDS Agent
 git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
-cd Micro-XRCE-DDS-Agent
-mkdir build && cd build
-cmake .. && make -j$(nproc)
-sudo make install && sudo ldconfig
-cd ../..
-```
+cd Micro-XRCE-DDS-Agent && mkdir build && cd build
+cmake .. && make -j$(nproc) && sudo make install && sudo ldconfig && cd ../..
 
-### Step 6 — Build ROS 2 workspace with px4_msgs
-
-```bash
+# 5. Build ROS 2 workspace with px4_msgs
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 git clone https://github.com/PX4/px4_msgs.git
-cd ~/ros2_ws
-colcon build
-echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
-source ~/.bashrc
-```
+cd ~/ros2_ws && colcon build
+echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc && source ~/.bashrc
 
-### Step 7 — Build CitySim
-
-```bash
-cd ~/px4_ai_tracker/citysim
-mkdir build && cd build
+# 6. Build CitySim
+cd citysim && mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=../../citysim_install
-make -j$(nproc) && make install
-cd ../..
-```
+make -j$(nproc) && make install && cd ../..
 
-### Step 8 — Install Python dependencies
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
+# 7. Python dependencies
+python3 -m venv venv && source venv/bin/activate
 pip install opencv-python numpy Pillow
 ```
 
----
-
-## 🚀 Usage
-
-### 🏙️ City Road Tracker
-
-Launches PX4 + Gazebo city world + road detection + road follower + GUI:
+### Usage
 
 ```bash
+# City Road Tracker (GUI auto-opens)
 bash launch_city_tracker.sh
-```
 
-Once all windows are open:
-1. The GUI window appears with a live camera feed
-2. Click **🔓 ARM + TAKEOFF** (or press `S` to start road-following)
-3. The drone takes off and autonomously follows road lines
-4. Click **⏹ LAND** (or press `E`) to land
-
-### 🌙 Nighttime Thermal Tracker
-
-Launches PX4 + Gazebo dark world + thermal perception + PID tracker:
-
-```bash
+# Nighttime Thermal Tracker
 bash launch_thermal_tracker.sh
-```
 
-The drone will automatically:
-1. Take off to cruise altitude
-2. Search for heat signatures (rotating scan)
-3. Lock onto the target and track it with PID visual servoing
-4. Land after the tracking timeout
+# Maze Solver
+bash launch_maze_solver.sh
 
-View the thermal feed:
-```bash
-ros2 run rqt_image_view rqt_image_view /thermal_tracker/annotated_image
-```
-
-### 🚁 Demo Mission (Circle + Figure-8 + Spiral)
-
-```bash
+# Demo flight patterns (circle → figure-8 → spiral)
 bash fly_now.sh
 ```
 
-The drone performs circle orbit → figure-8 → spiral descent → auto-land, fully autonomously.
+### GUI Controls
 
----
+| Key / Button | Action |
+|---|---|
+| **ARM + TAKEOFF** | Arm motors and take off to 15 m |
+| **LAND** | Auto-land at current position |
+| **E-STOP** | Emergency motor kill |
+| Arrow keys | Move forward / back / left / right |
+| `W` / `X` | Altitude up / down |
+| `A` / `D` | Yaw left / right |
+| `S` | Start road-following |
+| `E` | Land |
+| Escape | Emergency stop |
 
-## 🎮 GUI Controls
+**Available mission buttons:** Follow Roads · Follow Cars · Road Patrol · Circle Orbit · Square Patrol · Hover · Figure-8 · Grid Scan · Return Home
 
-| Control | Action |
-|---------|--------|
-| **🔓 ARM + TAKEOFF** | Arm motors and take off to 15m |
-| **⏹ LAND** | Auto-land at current position |
-| **🛑 E-STOP** | Emergency motor kill |
-| **Arrow keys** | Move forward/back/left/right |
-| **W / X** | Increase / decrease altitude |
-| **A / D** | Rotate left / right (yaw) |
-| **S** | Start road-following mission |
-| **E** | Land |
-| **Escape** | Emergency stop |
-
-### Available Missions
-
-| Button | Command | Description |
-|--------|---------|-------------|
-| 🛣️ Follow Roads | `START` | Autonomous road following |
-| 🚗 Follow Cars | `FOLLOWCAR` | Track and follow a vehicle |
-| 🚓 Road Patrol | `PATROL` | Patrol along road waypoints |
-| 🔄 Circle Orbit | `CIRCLE` | Circular flight pattern |
-| ⬜ Square Patrol | `SQUARE` | Square waypoint pattern |
-| ✈️ Hover | `HOVER` | Hold position |
-| ∞ Figure-8 | `FIGURE8` | Lemniscate flight pattern |
-| 📐 Grid Scan | `GRID` | Systematic area coverage |
-| 🏠 Return Home | `RTH` | Return to launch position |
-
----
-
-## 🧩 Node Details
-
-### `road_detection_node.py`
-- Subscribes to `/camera/image_raw`
-- HSV thresholding for asphalt detection (low saturation, medium value)
-- Morphological clean-up → contour detection → centre-of-mass + fitted heading
-- Publishes road offset, detection flag and annotated debug image
-
-### `road_follower_node.py`
-- 14-state finite state machine (WAITING → PREFLIGHT → TAKEOFF → mission → LAND → DONE)
-- Position-based offboard control via PX4
-- Yaw correction using road offset + heading angle with tunable gains
-- Subscribes to `/mission/command` for mission switching
-
-### `thermal_perception_node.py`
-- Binary threshold on grayscale thermal image → contour detection
-- Inferno colourmap annotated output with bounding boxes and HUD
-- Publishes normalised centroid (−1 to +1) for the PID tracker
-
-### `offboard_tracker_node.py`
-- 7-state FSM: PREFLIGHT → TAKEOFF → SEARCH → TRACKING → LOST_TARGET → LAND → DONE
-- Dual PID controllers (X/Y axes) with anti-windup for velocity-based visual servoing
-- Automatic search pattern (yaw rotation) when target is lost
-
-### `drone_gui.py`
-- Tkinter GUI with dark theme
-- Live camera feed (annotated or raw), telemetry bar, 9 mission buttons
-- ROS 2 spin in background thread, GUI updates at ~12 Hz
-
----
-
-## ⚙️ Configuration
-
-### Road Detection HSV Tuning
-
-Adjust via ROS 2 parameters:
-```bash
-python3 road_detection_node.py --ros-args \
-  -p road_h_low:=0 -p road_h_high:=180 \
-  -p road_s_low:=0 -p road_s_high:=80 \
-  -p road_v_low:=20 -p road_v_high:=160 \
-  -p min_road_area:=500
-```
-
-### Thermal Detection Tuning
-
-```bash
-python3 thermal_perception_node.py --ros-args \
-  -p thermal_threshold:=180 \
-  -p min_contour_area:=200 \
-  -p max_contour_area:=50000
-```
-
-### FastDDS Transport
-
-The `fastdds_udp_only.xml` forces UDP transport to avoid shared-memory issues. It is loaded automatically by all launch scripts via:
-```
-export FASTRTPS_DEFAULT_PROFILES_FILE=./fastdds_udp_only.xml
-```
-
----
-
-## 📡 ROS 2 Topics
+### Key ROS 2 Topics
 
 | Topic | Type | Description |
 |-------|------|-------------|
 | `/camera/image_raw` | `sensor_msgs/Image` | Downward camera feed |
-| `/road_tracker/road_offset` | `geometry_msgs/Point` | Road lateral offset + heading |
-| `/road_tracker/road_detected` | `std_msgs/Bool` | Road detection flag |
+| `/road_tracker/road_offset` | `geometry_msgs/Point` | Lateral offset + heading |
 | `/road_tracker/annotated_image` | `sensor_msgs/Image` | Annotated road debug view |
-| `/thermal_camera/image_raw` | `sensor_msgs/Image` | Thermal camera feed |
 | `/thermal_tracker/target_centroid` | `geometry_msgs/Point` | Normalised target position |
-| `/thermal_tracker/target_detected` | `std_msgs/Bool` | Target detection flag |
-| `/thermal_tracker/annotated_image` | `sensor_msgs/Image` | Thermal debug view (Inferno) |
+| `/thermal_tracker/annotated_image` | `sensor_msgs/Image` | Thermal view (Inferno) |
 | `/mission/command` | `std_msgs/String` | Mission command input |
 | `/fmu/in/trajectory_setpoint` | `px4_msgs/TrajectorySetpoint` | Position/velocity commands |
-| `/fmu/in/offboard_control_mode` | `px4_msgs/OffboardControlMode` | Offboard heartbeat |
-| `/fmu/out/vehicle_status` | `px4_msgs/VehicleStatus` | PX4 vehicle state |
+
+### Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| Gazebo city models missing | Verify `GAZEBO_MODEL_PATH` includes `citysim_install/share/citysim-0/models` |
+| PX4 ↔ ROS 2 no communication | Check DDS Agent: `MicroXRCEAgent udp4 -p 8888` |
+| Shared-memory DDS errors | Set `FASTRTPS_DEFAULT_PROFILES_FILE=./fastdds_udp_only.xml` |
+| Camera not publishing | Verify drone SDF includes `gazebo_ros_camera` plugin |
+| Offboard mode rejected | Heartbeats must be sent ≥ 2 s before arming (launch scripts handle this) |
 
 ---
 
-## 🧪 Troubleshooting
+## 🛸 Project 2 — PX4-ROS2-Gazebo-YOLOv8
 
-| Issue | Solution |
-|-------|----------|
-| Gazebo fails to load city models | Verify `GAZEBO_MODEL_PATH` includes `citysim_install/share/citysim-0/models` |
-| PX4 and ROS 2 don't communicate | Check DDS Agent is running: `MicroXRCEAgent udp4 -p 8888` |
-| Shared memory DDS errors | Ensure `FASTRTPS_DEFAULT_PROFILES_FILE` points to `fastdds_udp_only.xml` |
-| Camera topic not publishing | Verify the drone model includes the `gazebo_ros_camera` plugin |
-| Offboard mode rejected | Send heartbeats for ≥2 seconds before arming (handled by launch scripts) |
+Real-time aerial object detection using **YOLOv8** on a **2-axis gimbal camera** with full keyboard flight via **MAVSDK**, packaged in a single Docker container.
+
+> Based on: [monemati/PX4-ROS2-Gazebo-YOLOv8](https://github.com/monemati/PX4-ROS2-Gazebo-YOLOv8)
+
+### Features
+
+- ✅ YOLOv8 real-time detection on live drone camera feed
+- ✅ 2-axis gimbal (pitch + yaw) adjustable in flight
+- ✅ Keyboard-controlled flight via MAVSDK (WASD + arrows)
+- ✅ Moving hatchback car target driving in circles
+- ✅ Docker with GPU passthrough + X11 forwarding
+- ✅ Full stack in one tmuxinator 6-pane window
+
+### Architecture
+
+```
+┌────────────┐   ┌───────────────┐   ┌─────────────────────┐
+│ PX4 SITL   │   │ Micro         │   │ ros_gz_bridge        │
+│ x500_depth │◄──│ XRCE-DDS      │   │ (Gazebo → ROS 2 cam) │
+└────────────┘   └───────────────┘   └──────────┬──────────┘
+      │                                          │
+┌─────┴──────┐                        ┌──────────▼──────────┐
+│ Gazebo     │                        │ YOLOv8 Detection    │
+│ Garden     │                        │ uav_camera_det.py   │
+└────────────┘                        └─────────────────────┘
+                                      ┌─────────────────────┐
+                                      │ MAVSDK Keyboard     │
+                                      │ keyboard-mavsdk.py  │
+                                      └─────────────────────┘
+```
+
+### tmuxinator Pane Layout
+
+| Pane | Service |
+|------|---------|
+| 1 | Micro XRCE-DDS Agent |
+| 2 | PX4 SITL (`x500_depth`) |
+| 3 | ROS-Gazebo camera bridge |
+| 4 | YOLOv8 detection display |
+| 5 | Moving car (`move_car.py`) |
+| 6 | Keyboard drone controller |
+
+### Gimbal Camera System
+
+`setup_gimbal.py` rewrites the `x500_depth` SDF at build time to add:
+
+- **`gimbal_yaw_joint`** — revolute around Z-axis, range ±90°
+- **`gimbal_pitch_joint`** — revolute around Y-axis, range −90° to +30° (default −45°)
+
+Each joint is driven by a Gazebo `JointPositionController` plugin on topics `/gimbal/cmd_pitch` and `/gimbal/cmd_yaw`.
+
+### Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `r` | Arm |
+| `l` | Land |
+| `w` / `s` | Throttle up / down |
+| `a` / `d` | Yaw left / right |
+| Arrow keys | Roll / Pitch |
+| `j` / `k` | Gimbal pitch down / up |
+| `n` / `m` | Gimbal yaw left / right |
+| Ctrl+C | Quit |
+
+### Quick Start (Docker)
+
+```bash
+# Allow X11 access
+xhost +local:docker
+
+# Pull pre-built image
+docker pull monemati/px4_ros2_gz_yolov8_image
+
+# Launch (tmuxinator starts all 6 services automatically)
+XAUTH=/tmp/.docker.xauth
+touch $XAUTH
+xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | xauth -f $XAUTH nmerge -
+
+docker run --privileged -it --gpus all \
+  -e NVIDIA_DRIVER_CAPABILITIES=all \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  -e MESA_GL_VERSION_OVERRIDE=3.3 \
+  --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+  --env="XAUTHORITY=$XAUTH" \
+  --volume="$XAUTH:$XAUTH" \
+  --network=host --ipc=host --shm-size=2gb \
+  --env="DISPLAY=$DISPLAY" \
+  --env="QT_X11_NO_MITSHM=1" \
+  --rm --name px4_ros2_gz_yolov8_container \
+  px4_ros2_gz_yolov8_image
+```
+
+Switch to the keyboard controller pane (**Ctrl+b → arrow key**), then press **`r`** to arm.
+
+### Manual Installation (no Docker)
+
+```bash
+# Python virtual environment
+python -m venv ~/px4-venv && source ~/px4-venv/bin/activate
+
+# Clone
+git clone https://github.com/monemati/PX4-ROS2-Gazebo-YOLOv8.git
+
+# Install PX4 (Gazebo Garden / SITL)
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive
+bash ./PX4-Autopilot/Tools/setup/ubuntu.sh
+cd PX4-Autopilot && make px4_sitl
+
+# Install ROS 2 Humble + Gazebo Garden bridge
+sudo apt install ros-humble-desktop ros-humble-ros-gzgarden
+
+# Install Python packages
+pip install mavsdk aioconsole numpy opencv-python ultralytics
+
+# Set up gimbal (edit MODEL_PATH in script first)
+python setup_gimbal.py
+
+# Copy models and world
+cp -r models/* ~/.gz/models/
+cp worlds/default.sdf ~/PX4-Autopilot/Tools/simulation/gz/worlds/
+```
+
+### Running (without Docker)
+
+Open 6 terminals:
+
+```bash
+# T1 — DDS Agent
+MicroXRCEAgent udp4 -p 8888
+
+# T2 — PX4 SITL
+PX4_SYS_AUTOSTART=4002 PX4_GZ_MODEL_POSE="268.08,-128.22,3.86,0,0,-0.7" \
+  PX4_GZ_MODEL=x500_depth ./build/px4_sitl_default/bin/px4
+
+# T3 — Camera bridge
+ros2 run ros_gz_bridge parameter_bridge \
+  /world/default/model/x500_depth_0/link/camera_link/sensor/IMX214/image@sensor_msgs/msg/Image[gz.msgs.Image \
+  --ros-args -r /world/default/model/x500_depth_0/link/camera_link/sensor/IMX214/image:=/camera
+
+# T4 — YOLOv8 detection
+source ~/px4-venv/bin/activate && python uav_camera_det.py
+
+# T5 — Moving car
+source ~/px4-venv/bin/activate && python move_car.py
+
+# T6 — Keyboard controller (focus this terminal)
+source ~/px4-venv/bin/activate && python keyboard-mavsdk-test.py
+```
 
 ---
 
 ## 👥 Authors
 
-- **Ayachi Dhia Eddine**
+| Name | Role |
+|------|------|
+| **Ayachi Dhia Eddine** | Project lead, computer vision |
+| **Zemmouli Ahmed** | Flight control, ROS 2 integration |
+| **Touhari Mounir** | Simulation, system integration |
+
+Faculty of Electrical Engineering — USTHB  
+Master SIPNOM — Intelligent Systems
 
 ---
 
 ## 📄 License
 
-This project is for educational and research purposes.  
-PX4 Autopilot is licensed under BSD-3. CitySim is licensed under Apache 2.0.
+Educational and research use.  
+PX4 Autopilot — BSD-3-Clause · CitySim — Apache 2.0 · Ultralytics YOLOv8 — AGPL-3.0
+
+---
+
+## 🙏 Acknowledgements
+
+- [PX4 Autopilot](https://github.com/PX4/PX4-Autopilot)
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
+- [monemati/PX4-ROS2-Gazebo-YOLOv8](https://github.com/monemati/PX4-ROS2-Gazebo-YOLOv8)
+- [ROS 2](https://www.ros.org/) · [Gazebo](https://gazebosim.org) · [MAVSDK](https://mavsdk.mavlink.io)
