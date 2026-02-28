@@ -328,11 +328,10 @@ source ~/px4-venv/bin/activate && python keyboard-mavsdk-test.py
 
 ## 👥 Authors
 
-| Name | Role |
-|------|------|
+| Name |
+|------|
 | **Ayachi Dhia Eddine** | Project lead, computer vision |
-| **Zemmouli Ahmed** | Flight control, ROS 2 integration |
-| **Touhari Mounir** | Simulation, system integration |
+
 
 Faculty of Electrical Engineering — USTHB  
 Master SIPNOM — Intelligent Systems
